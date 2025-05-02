@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -116,7 +115,19 @@ const AdminMatchesPage: React.FC = () => {
                         </div>
                       </TableCell>
                       <TableCell className="max-w-xs">
-                        <p className="truncate">{item.description}</p>
+                        <div className="flex flex-col space-y-2">
+                          <p className="truncate">{item.description}</p>
+                          {item.proofImage && item.proofImage !== "/placeholder.svg" && (
+                            <img 
+                              src={item.proofImage} 
+                              alt="Proof" 
+                              className="max-h-20 rounded-md cursor-pointer"
+                              onClick={() => {
+                                window.open(item.proofImage, '_blank');
+                              }}
+                            />
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <p>{item.reportedBy.name}</p>

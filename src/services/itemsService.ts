@@ -1,4 +1,3 @@
-
 import { toast } from "@/components/ui/use-toast";
 
 export interface LostItem {
@@ -27,9 +26,36 @@ export interface ItemIssue {
   userName: string;
   userEmail: string;
   description: string;
-  proof: string;
+  proof: string | File;
+  proofImage?: string;
   status: "pending" | "approved" | "rejected";
   createdAt: string;
+}
+
+export interface MatchedItem {
+  id: string;
+  name: string;
+  description: string;
+  color: string;
+  brand: string;
+  uniqueId: string;
+  timestamp: string;
+  location: string;
+  image: string;
+  status: "matched";
+  reportedBy: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  claimedBy: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  matchedAt: string;
+  issueId: string;
+  proofImage: string;
 }
 
 // Mock data
@@ -209,15 +235,26 @@ export const deleteItem = async (id: string): Promise<boolean> => {
 };
 
 // Create issue
-export const createIssue = async (issue: Omit<ItemIssue, "id" | "createdAt" | "status">): Promise<ItemIssue> => {
-  // Simulate API call
+export const createIssue = async (issue: Omit<ItemIssue, "id" | "createdAt" | "status">, proofFile?: File): Promise<ItemIssue> => {
   await new Promise(resolve => setTimeout(resolve, 1000));
   
+  let proofImage = "/placeholder.svg";
+  
+  // Handle file upload (convert to base64 for mock storage)
+  if (proofFile) {
+    proofImage = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(proofFile);
+    });
+  }
+
   const newIssue: ItemIssue = {
     ...issue,
     id: String(MOCK_ISSUES.length + 1),
     status: "pending",
     createdAt: new Date().toISOString(),
+    proofImage
   };
   
   MOCK_ISSUES.push(newIssue);
@@ -245,20 +282,48 @@ export const getIssuesByItemId = async (itemId: string): Promise<ItemIssue[]> =>
 };
 
 // Update issue status
-export const updateIssueStatus = async (
-  id: string, 
-  status: ItemIssue["status"]
-): Promise<ItemIssue | null> => {
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 800));
+export const updateIssueStatus = async (id: string, status: ItemIssue["status"], userData?: any): Promise<ItemIssue | null> => {
+  await new Promise(resolve => setTimeout(resolve, 1000));
   
-  const issueIndex = MOCK_ISSUES.findIndex(issue => issue.id === id);
-  if (issueIndex === -1) return null;
+  const updatedIssue = MOCK_ISSUES.find(issue => issue.id === id);
+  if (!updatedIssue) return null;
   
-  MOCK_ISSUES[issueIndex] = {
-    ...MOCK_ISSUES[issueIndex],
-    status,
-  };
+  updatedIssue.status = status;
   
-  return MOCK_ISSUES[issueIndex];
+  if (status === 'approved' && userData) {
+    const item = MOCK_ITEMS.find(item => item.id === updatedIssue.itemId);
+    if (item) {
+      const matchedItem: MatchedItem = {
+        ...item,
+        status: 'matched',
+        claimedBy: {
+          id: userData.id,
+          name: userData.name,
+          email: userData.email
+        },
+        matchedAt: new Date().toISOString(),
+        issueId: id,
+        proofImage: updatedIssue.proofImage
+      };
+      
+      // Update the item status
+      const itemIndex = MOCK_ITEMS.findIndex(i => i.id === item.id);
+      if (itemIndex !== -1) {
+        MOCK_ITEMS[itemIndex] = {
+          ...item,
+          status: 'matched',
+        };
+      }
+      
+      // Add to matched items
+      MOCK_ITEMS.push(matchedItem);
+    }
+  }
+  
+  return updatedIssue;
+};
+
+export const getMatchedItems = async (): Promise<MatchedItem[]> => {
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  return MOCK_ITEMS.filter(item => item.status === 'matched') as MatchedItem[];
 };

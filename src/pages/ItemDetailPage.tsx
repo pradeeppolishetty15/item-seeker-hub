@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,6 +10,7 @@ import { ArrowLeft, User, AlertTriangle } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "@/components/ui/use-toast";
 
 const ItemDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +23,7 @@ const ItemDetailPage: React.FC = () => {
   const [issueProof, setIssueProof] = useState("/placeholder.svg");
   const [isSubmittingIssue, setIsSubmittingIssue] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [proofFile, setProofFile] = useState<File | null>(null);
 
   useEffect(() => {
     const fetchItem = async () => {
@@ -43,7 +44,14 @@ const ItemDetailPage: React.FC = () => {
   const handleIssueSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user || !item) return;
+    if (!user || !item) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to raise an issue.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     setIsSubmittingIssue(true);
     
@@ -55,7 +63,7 @@ const ItemDetailPage: React.FC = () => {
         userEmail: user.email,
         description: issueDescription,
         proof: issueProof
-      });
+      }, proofFile);
       
       setIsDialogOpen(false);
       // In a real app, you might want to refresh the item data or redirect
@@ -196,6 +204,11 @@ const ItemDetailPage: React.FC = () => {
                             type="file"
                             accept="image/*"
                             className="cursor-pointer"
+                            onChange={(e) => {
+                              if (e.target.files) {
+                                setProofFile(e.target.files[0]);
+                              }
+                            }}
                           />
                           <p className="text-xs text-gray-500">
                             Upload a receipt, additional photos, or any other evidence that supports your claim.
